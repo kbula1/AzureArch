@@ -1,0 +1,14 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+  "project_name": { "value": "hotelapp" },
+  "enviroment": { "value": "dev" },
+  "adminUserName": { "value": "azureuser" },
+  "adminPassword": { "value": "Azure12345678" },
+  "vnetName": { "value": "vnet" },
+  "network_security_group_name": { "value": "nsg" },
+  "machine_one_name":{ "value": "vm-first" },
+  "machine_two_name":{ "value": "vm-second" }
+  }
+}

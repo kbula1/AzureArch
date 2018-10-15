@@ -1,0 +1,185 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "adminUsername": { "type": "string" },
+    "project_name": { "type": "string" },
+    "enviroment": { "type": "string" },
+    "adminPassword": { "type": "securestring" },
+    "vnetName": { "type": "string" },
+    "machine_one_name": { "type": "string" },
+    "machine_two_name": { "type": "string" },
+    "network_security_group_name": { "type": "string" }
+  },
+  "variables": {
+    "virtualNetworkName": "[concat(parameters('project_name'),'-', parameters('vnetName'), '-',parameters('enviroment'))]",
+    "vnetID": "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
+    "subnetRefFirst": "[concat(variables('vnetID'),'/subnets/firstSubnet')]",
+    "subnetRefSecond": "[concat(variables('vnetID'),'/subnets/secondSubnet')]",
+    "NetworkSecurityGroupName": "[concat(parameters('project_name'),'-', parameters('network_security_group_name'), '-',parameters('enviroment'))]"
+  },
+  "resources": [
+    {
+      "apiVersion": "2018-08-01",
+      "name": "[variables('NetworkSecurityGroupName')]",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "AllowSSHPort",
+            "properties": {
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*",
+              "direction": "Inbound",
+              "access": "Allow",
+              "priority": 200,
+              "protocol": "Tcp",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "22"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2016-03-30",
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[variables('virtualNetworkName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "addressSpace": { "addressPrefixes": ["10.0.0.0/16"] },
+        "subnets": [
+          {
+            "name": "firstSubnet",
+            "properties": {
+              "addressPrefix": "10.0.1.0/24",
+              "networkSecurityGroup": {
+                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('NetworkSecurityGroupName'))]"
+              }
+            }
+          },
+          {
+            "name": "secondSubnet",
+            "properties": {
+              "addressPrefix": "10.0.2.0/24",
+              "networkSecurityGroup": {
+                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('NetworkSecurityGroupName'))]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2016-03-30",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "myNicFirst",
+      "location": "[resourceGroup().location]",
+      "dependsOn": ["[variables('vnetID')]"],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": { "id": "[variables('subnetRefFirst')]" }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2016-03-30",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "myNicSecond",
+      "location": "[resourceGroup().location]",
+      "dependsOn": ["[variables('vnetID')]"],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig2",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": { "id": "[variables('subnetRefSecond')]" }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2016-04-30-preview",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[parameters('machine_one_name')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces/', 'myNicFirst')]"
+      ],
+      "properties": {
+        "hardwareProfile": { "vmSize": "Standard_B1s" },
+        "osProfile": {
+          "computerName": "[parameters('machine_one_name')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "Canonical",
+            "offer": "UbuntuServer",
+            "sku": "18.04-LTS",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "myManagedOSDiskOne",
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces','myNicFirst')]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "apiVersion": "2016-04-30-preview",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[parameters('machine_two_name')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces/', 'myNicSecond')]"
+      ],
+      "properties": {
+        "hardwareProfile": { "vmSize": "Standard_B1s" },
+        "osProfile": {
+          "computerName": "[parameters('machine_two_name')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "Canonical",
+            "offer": "UbuntuServer",
+            "sku": "18.04-LTS",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "myManagedOSDiskTwo",
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces','myNicSecond')]"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

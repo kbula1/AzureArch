@@ -1,0 +1,28 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+  "project_name": { "value": "hotelapp" },
+  "enviroment": { "value": "dev" },
+  "adminUserName": { 
+    "reference": {
+        "keyVault": {
+            "id": "/subscriptions/<sub-id>/resourceGroups/AZURE_LESSON_3/providers/Microsoft.KeyVault/vaults/lesson3-key-vault"
+        },
+        "secretName": "admin-user-name"
+    }
+ },
+ "adminPassword": { 
+  "reference": {
+      "keyVault": {
+          "id": "/subscriptions/<sub-id>/resourceGroups/AZURE_LESSON_3/providers/Microsoft.KeyVault/vaults/lesson3-key-vault"
+      },
+      "secretName": "admin-user-password"
+  }
+},
+  "vnetName": { "value": "vnet" },
+  "network_security_group_name": { "value": "nsg" },
+  "machine_one_name":{ "value": "vm-first" },
+  "machine_two_name":{ "value": "vm-second" }
+  }
+}
